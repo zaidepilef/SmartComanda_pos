@@ -1,0 +1,27 @@
+<div class="picker-wrap">
+  <div class="picker-card">
+    <h1>Elige un negocio</h1>
+    <p>Selecciona el negocio para tomar pedidos.</p>
+
+    @if (error()) {
+      <div class="error" role="alert">{{ error() }}</div>
+    }
+
+    @if (loading()) {
+      <div class="muted">Cargando...</div>
+    } @else {
+      <div class="grid">
+        @for (tenant of tenants(); track tenant._id) {
+          <button type="button" class="cell" (click)="choose(tenant)">
+            <span class="cell-icon">🏪</span>
+            <span class="cell-name">{{ tenant.name }}</span>
+          </button>
+        } @empty {
+          <div class="muted">No hay negocios disponibles.</div>
+        }
+      </div>
+    }
+
+    <button type="button" class="btn-ghost" (click)="logout()">Cerrar sesión</button>
+  </div>
+</div>

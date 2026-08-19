@@ -1,0 +1,178 @@
+.kds-wrap {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.kds-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.kds-head h2 {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.kds-info {
+  display: flex;
+  gap: 8px;
+}
+
+.pill {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.pill.amber {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.pill.green {
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.4);
+}
+
+.error-banner {
+  background: rgba(193, 18, 31, 0.15);
+  border: 1px solid var(--danger);
+  color: #ff8a94;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.kds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.kds-col h3 {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.kds-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kds-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.kds-card.timed {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 1px var(--danger);
+}
+
+.kds-card.ready {
+  border-color: rgba(74, 222, 128, 0.4);
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-head .num {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.card-head .time {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 2px 0 8px;
+}
+
+.items {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.items li {
+  font-size: 14px;
+}
+
+.items .q {
+  font-weight: 800;
+}
+
+.items .note {
+  font-size: 12px;
+  color: var(--accent);
+  margin-top: 2px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.card-actions .advance {
+  flex: 1;
+  padding: 9px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  transition: filter 0.15s;
+}
+
+.card-actions .advance:hover {
+  filter: brightness(1.1);
+}
+
+.card-actions .cancel {
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--danger);
+  color: #ff8a94;
+  font-size: 14px;
+}
+
+.card-actions .cancel:hover {
+  background: rgba(193, 18, 31, 0.15);
+}
+
+.empty {
+  background: var(--panel2);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}

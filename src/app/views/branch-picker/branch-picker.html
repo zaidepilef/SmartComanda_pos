@@ -1,0 +1,31 @@
+<div class="picker-wrap">
+  <div class="picker-card">
+    <h1>Elige una sucursal</h1>
+    <p>{{ tenant()?.name ?? '' }}</p>
+
+    @if (error()) {
+      <div class="error" role="alert">{{ error() }}</div>
+    }
+
+    @if (loading()) {
+      <div class="muted">Cargando...</div>
+    } @else {
+      <div class="grid">
+        @for (branch of branches(); track branch._id) {
+          <button type="button" class="cell" (click)="choose(branch._id)">
+            <span class="cell-icon">{{ branch.type === 'FoodTruck' ? '🚚' : '🏬' }}</span>
+            <span class="cell-name">{{ branch.name }}</span>
+            <span class="cell-sub">{{ branch.city ?? branch.type }}</span>
+          </button>
+        } @empty {
+          <div class="muted">No hay sucursales activas.</div>
+        }
+      </div>
+    }
+
+    <div class="actions">
+      <button type="button" class="btn-ghost" (click)="back()">← Cambiar negocio</button>
+      <button type="button" class="btn-ghost" (click)="logout()">Cerrar sesión</button>
+    </div>
+  </div>
+</div>

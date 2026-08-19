@@ -1,0 +1,66 @@
+<header>
+  <div class="brand">
+    <span class="logo">🍔</span>
+    <div>
+      <div class="brand-name">SmartComanda</div>
+      <div class="brand-branch">
+        @if (tenant()?.name) {
+          <span class="brand-tenant">{{ tenant()?.name }}</span>
+        }
+        @if (tenant()?.name && branch()?.name) {
+          <span class="brand-sep">·</span>
+        }
+        <span>{{ branch()?.name ?? 'POS' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <div class="clock">
+      <span>{{ timeLabel() }}</span>
+      <span class="date">{{ dateLabel() }}</span>
+    </div>
+
+    @if (cashSession()) {
+      <div class="cash-badge" title="Caja abierta">
+        <span class="dot"></span>
+        Caja abierta
+      </div>
+    }
+
+    <nav class="header-nav">
+      <a routerLink="/pos" routerLinkActive="active">Pedidos</a>
+      <a routerLink="/kds" routerLinkActive="active">Cocina</a>
+      <button (click)="goToCaja()">Caja</button>
+    </nav>
+
+    <div class="user-wrap">
+      <button type="button" class="user-btn" (click)="toggleMenu()" aria-haspopup="menu" [attr.aria-expanded]="menuOpen()">
+        <span class="avatar">{{ userInitials() }}</span>
+        <span class="user-name">{{ userNameLabel() }}</span>
+        <span class="chevron">{{ menuOpen() ? '▲' : '▼' }}</span>
+      </button>
+
+      @if (menuOpen()) {
+        <div class="backdrop" (click)="closeMenu()"></div>
+        <div class="user-menu" role="menu">
+          <div class="menu-head">
+            <div class="menu-name">{{ userNameLabel() }}</div>
+            @if (user()?.email) {
+              <div class="menu-email">{{ user()?.email }}</div>
+            }
+          </div>
+          <button type="button" class="menu-item" (click)="goToBranchPicker()">
+            <span class="mi">🏪</span> Cambiar de sucursal
+          </button>
+          <button type="button" class="menu-item" (click)="exitContext()">
+            <span class="mi">🚪</span> Salir
+          </button>
+          <button type="button" class="menu-item danger" (click)="logout()">
+            <span class="mi">⏻</span> Cerrar sesión
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</header>

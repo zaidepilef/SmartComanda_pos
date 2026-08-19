@@ -1,0 +1,47 @@
+<div class="login-wrap">
+  <form class="login-card" (ngSubmit)="submit()">
+    <div class="login-brand">
+      <span class="logo">🍔</span>
+      <h1>SmartComanda POS</h1>
+      <p>Ingresa con tu cuenta para tomar pedidos.</p>
+    </div>
+
+    @if (error()) {
+      <div class="error" role="alert">{{ error() }}</div>
+    }
+
+    <div class="field">
+      <label for="loginEmail">Email</label>
+      <input
+        id="loginEmail"
+        type="email"
+        autocomplete="username"
+        [(ngModel)]="email"
+        name="email"
+        required
+        placeholder="tucorreo@negocio.cl"
+      />
+    </div>
+
+    <div class="field">
+      <label for="loginPassword">Contraseña</label>
+      <input
+        id="loginPassword"
+        type="password"
+        autocomplete="current-password"
+        [(ngModel)]="password"
+        name="password"
+        required
+        placeholder="••••••••"
+      />
+    </div>
+
+    <div class="captcha">
+      <app-turnstile (ready)="onTurnstileReady($event)" />
+    </div>
+
+    <button type="submit" class="btn-primary" [disabled]="loading()">
+      {{ loading() ? 'Ingresando...' : 'Ingresar' }}
+    </button>
+  </form>
+</div>

@@ -1,0 +1,113 @@
+<div class="cash-wrap">
+  @if (!cashSession()) {
+    <div class="cash-card open-card">
+      <h2>Abrir caja</h2>
+      <p>No hay una sesión de caja abierta para {{ branchName() }}. Ábrela para poder cobrar pedidos.</p>
+
+      @if (error()) {
+        <div class="error" role="alert">{{ error() }}</div>
+      }
+
+      <div class="sec">
+        <label for="openingAmount">Monto inicial</label>
+        <input
+          id="openingAmount"
+          type="number"
+          min="0"
+          step="500"
+          [(ngModel)]="openingAmount"
+          name="openingAmount"
+          placeholder="0"
+        />
+      </div>
+
+      <button type="button" class="btn-primary" (click)="openSession()" [disabled]="opening()">
+        {{ opening() ? 'Abriendo...' : 'Abrir caja' }}
+      </button>
+    </div>
+  } @else if (closedSession; as closed) {
+    <h2>Caja cerrada — {{ branchName() }}</h2>
+    <p class="sub">Cerrada el {{ openedAtLabel(closed) }} con {{ formatCLP(closed.openingAmount) }} de apertura</p>
+
+    <div class="cash-grid">
+      @for (method of paymentMethods(); track method) {
+        <div class="cash-card">
+          <div class="lbl">{{ paymentLabel(method) }}</div>
+          <div class="val">{{ formatCLP(closed.totals[method] ?? 0) }}</div>
+          <div class="dif {{ (closingDifference(method) < 0) ? 'neg' : 'pos' }}">
+            {{ formatSignedCLP(closingDifference(method)) }}
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="cash-total">
+      <div class="lbl">Ventas registradas</div>
+      <div class="val">{{ closed.orderCount }}</div>
+    </div>
+
+    <button type="button" class="btn-primary" (click)="finishClosed()">Continuar</button>
+  } @else if (cashSession(); as session) {
+    <h2>Caja — {{ branchName() }}</h2>
+    <p class="sub">Abierta el {{ openedAtLabel(session) }} con {{ formatCLP(session.openingAmount) }}</p>
+
+    <div class="cash-grid">
+      @for (method of paymentMethods(); track method) {
+        <div class="cash-card">
+          <div class="lbl">{{ paymentLabel(method) }}</div>
+          <div class="val">{{ formatCLP(paymentTotal(method)) }}</div>
+        </div>
+      }
+      <div class="cash-card">
+        <div class="lbl">Ventas</div>
+        <div class="val">{{ session.orderCount }}</div>
+      </div>
+    </div>
+
+    <div class="cash-total">
+      <div class="lbl">Total en caja</div>
+      <div class="val">{{ formatCLP(totalSession()) }}</div>
+    </div>
+
+    @if (error()) {
+      <div class="error" role="alert">{{ error() }}</div>
+    }
+
+    @if (closingFormOpen()) {
+      <div class="cash-card close-card">
+        <h3>Cerrar caja</h3>
+        <p class="sub">Verifica el dinero contado por método de pago.</p>
+
+        <div class="close-grid">
+          @for (method of paymentMethods(); track method) {
+            <div class="sec">
+              <label [for]="'close' + method">{{ paymentLabel(method) }}</label>
+              <input
+                [id]="'close' + method"
+                type="number"
+                min="0"
+                step="100"
+                [ngModel]="closingAmounts[method] ?? 0"
+                (ngModelChange)="closingAmounts[method] = $event"
+                name="close{{ method }}"
+              />
+            </div>
+          }
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn-primary" (click)="closeSession()" [disabled]="closing()">
+            {{ closing() ? 'Cerrando...' : 'Confirmar cierre' }}
+          </button>
+          <button type="button" class="btn-ghost" (click)="cancelClose()" [disabled]="closing()">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    } @else {
+      <button type="button" class="btn-danger" (click)="startClose()">Cerrar caja</button>
+    }
+
+    <button type="button" class="btn-ghost" (click)="goToPos()">← Volver a pedidos</button>
+  }
+</div>

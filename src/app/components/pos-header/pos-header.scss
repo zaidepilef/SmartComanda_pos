@@ -1,0 +1,226 @@
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  font-size: 26px;
+}
+
+.brand-name {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+
+.brand-branch {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.brand-tenant {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.brand-sep {
+  margin: 0 4px;
+  color: var(--muted);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock .date {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: capitalize;
+}
+
+.cash-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ok);
+}
+
+.cash-badge .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 8px var(--ok);
+}
+
+.header-nav {
+  display: flex;
+  gap: 6px;
+}
+
+.header-nav a,
+.header-nav button {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--panel);
+  transition: background 0.15s, color 0.15s;
+}
+
+.header-nav a:hover,
+.header-nav button:hover {
+  background: var(--panel2);
+  color: var(--text);
+}
+
+.header-nav a.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.user-wrap {
+  position: relative;
+}
+
+.user-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text);
+  transition: background 0.15s;
+}
+
+.user-btn:hover {
+  background: var(--panel2);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-name {
+  font-size: 13px;
+  font-weight: 700;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+.user-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  min-width: 240px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-head {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+
+.menu-name {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.menu-email {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.menu-item:hover {
+  background: var(--panel2);
+}
+
+.menu-item.danger {
+  color: #ff8a94;
+}
+
+.menu-item.danger:hover {
+  background: rgba(193, 18, 31, 0.15);
+}
+
+.menu-item .mi {
+  font-size: 15px;
+}

@@ -1,0 +1,124 @@
+<div class="kds-wrap">
+  <div class="kds-head">
+    <h2>Cocina</h2>
+    <div class="kds-info">
+      <span class="pill">{{ newOrders().length }} nuevos</span>
+      <span class="pill amber">{{ preparingOrders().length }} en preparación</span>
+      <span class="pill green">{{ readyOrders().length }} listos</span>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="error-banner">{{ error() }}</div>
+  }
+
+  <div class="kds-grid">
+    <section class="kds-col">
+      <h3>Nuevos</h3>
+      @for (order of newOrders(); track order._id) {
+        <article class="kds-card" [class.timed]="elapsedMinutes(order.createdAt) >= 10">
+          <div class="card-head">
+            <span class="num">#{{ order.number }}</span>
+            <span class="time">{{ elapsedLabel(order.createdAt) }}</span>
+          </div>
+          <div class="meta">
+            {{ orderTypeLabel(order.orderType) }}
+            @if (order.clientContact) {
+              <span>· {{ order.clientContact }}</span>
+            }
+          </div>
+          <ul class="items">
+            @for (item of order.items; track $index) {
+              <li>
+                <span class="q">{{ item.quantity }}×</span> {{ item.name }}
+                @if (item.note) {
+                  <div class="note">📝 {{ item.note }}</div>
+                }
+              </li>
+            }
+          </ul>
+          <div class="card-actions">
+            <button type="button" class="advance" (click)="advance(order)">
+              {{ advanceLabel(order) }}
+            </button>
+            @if (canCancel(order)) {
+              <button type="button" class="cancel" (click)="cancel(order)">✕</button>
+            }
+          </div>
+        </article>
+      } @empty {
+        <div class="empty">Sin pedidos nuevos.</div>
+      }
+    </section>
+
+    <section class="kds-col">
+      <h3>En preparación</h3>
+      @for (order of preparingOrders(); track order._id) {
+        <article class="kds-card" [class.timed]="elapsedMinutes(order.createdAt) >= 15">
+          <div class="card-head">
+            <span class="num">#{{ order.number }}</span>
+            <span class="time">{{ elapsedLabel(order.createdAt) }}</span>
+          </div>
+          <div class="meta">
+            {{ orderTypeLabel(order.orderType) }}
+            @if (order.clientContact) {
+              <span>· {{ order.clientContact }}</span>
+            }
+          </div>
+          <ul class="items">
+            @for (item of order.items; track $index) {
+              <li>
+                <span class="q">{{ item.quantity }}×</span> {{ item.name }}
+                @if (item.note) {
+                  <div class="note">📝 {{ item.note }}</div>
+                }
+              </li>
+            }
+          </ul>
+          <div class="card-actions">
+            <button type="button" class="advance" (click)="advance(order)">
+              {{ advanceLabel(order) }}
+            </button>
+            @if (canCancel(order)) {
+              <button type="button" class="cancel" (click)="cancel(order)">✕</button>
+            }
+          </div>
+        </article>
+      } @empty {
+        <div class="empty">Sin pedidos en preparación.</div>
+      }
+    </section>
+
+    <section class="kds-col">
+      <h3>Listos</h3>
+      @for (order of readyOrders(); track order._id) {
+        <article class="kds-card ready">
+          <div class="card-head">
+            <span class="num">#{{ order.number }}</span>
+            <span class="time">{{ elapsedLabel(order.createdAt) }}</span>
+          </div>
+          <div class="meta">
+            {{ orderTypeLabel(order.orderType) }}
+            @if (order.clientContact) {
+              <span>· {{ order.clientContact }}</span>
+            }
+          </div>
+          <ul class="items">
+            @for (item of order.items; track $index) {
+              <li>
+                <span class="q">{{ item.quantity }}×</span> {{ item.name }}
+              </li>
+            }
+          </ul>
+          <div class="card-actions">
+            <button type="button" class="advance" (click)="advance(order)">
+              {{ advanceLabel(order) }}
+            </button>
+          </div>
+        </article>
+      } @empty {
+        <div class="empty">Sin pedidos listos.</div>
+      }
+    </section>
+  </div>
+</div>

@@ -1,0 +1,7 @@
+<div class="toast-wrap">
+  @for (message of messages(); track message.id) {
+    <div class="toast show" [class.ok]="message.type === 'ok'" [class.error]="message.type === 'error'" (click)="dismiss(message.id)">
+      {{ message.text }}
+    </div>
+  }
+</div>
