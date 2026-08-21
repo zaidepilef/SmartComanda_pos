@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "frontend-pos": {
+    "SmartComanda_pos": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -90,10 +90,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "frontend-pos:build:production"
+              "buildTarget": "SmartComanda_pos:build:production"
             },
             "development": {
-              "buildTarget": "frontend-pos:build:development"
+              "buildTarget": "SmartComanda_pos:build:development"
             }
           },
           "defaultConfiguration": "development"
