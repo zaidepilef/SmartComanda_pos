@@ -1,0 +1,92 @@
+name: Deploy Smartcomanda POS
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+
+    steps:
+      # 1. Descargar el código
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Instalar Node
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # 3. Instalar dependencias
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Generar environment.prod.ts
+      - name: Generate production environment
+        run: |
+          cat > src/environments/environment.prod.ts <<EOF
+          export const environment = {
+            production: true,
+            apiUrl: '${{ vars.APIURL }}',
+            turnstileSiteKey: '${{ vars.TURNSTILESITEKEY }}',
+            publicUrl: '${{ vars.PUBLICURL }}',
+          };
+          EOF
+
+      # 5. Mostrar configuración (sin secretos)
+      - name: Show production configuration
+        run: |
+          echo "API URL: ${{ vars.APIURL }}"
+          echo "Public URL: ${{ vars.PUBLICURL }}"
+          echo "turnstile Site Key: ${{ vars.TURNSTILESITEKEY }}"
+
+      # 6. Compilar Angular
+      - name: Build Angular
+        run: npm run build -- --base-href /SmartComanda_pos/
+
+      # 7. Mostrar qué generó Angular
+      - name: Show build output
+        run: |
+          echo "Build generado:"
+          find dist -maxdepth 3 -type f | head -50
+
+      # 8. Configurar GitHub Pages
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+
+      # 9. Subir dist
+      - name: Upload Angular artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist/SmartComanda_pos/browser
+
+  deploy:
+    needs: build
+
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+
+      # 10. Publicar
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
