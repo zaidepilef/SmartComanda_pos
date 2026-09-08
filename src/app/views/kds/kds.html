@@ -23,6 +23,12 @@
           </div>
           <div class="meta">
             {{ orderTypeLabel(order.orderType) }}
+            @if (order.clientName) {
+              <span>· {{ order.clientName }}</span>
+            }
+            @if (order.clientPhone) {
+              <span>· {{ order.clientPhone }}</span>
+            }
             @if (order.clientContact) {
               <span>· {{ order.clientContact }}</span>
             }
@@ -61,6 +67,12 @@
           </div>
           <div class="meta">
             {{ orderTypeLabel(order.orderType) }}
+            @if (order.clientName) {
+              <span>· {{ order.clientName }}</span>
+            }
+            @if (order.clientPhone) {
+              <span>· {{ order.clientPhone }}</span>
+            }
             @if (order.clientContact) {
               <span>· {{ order.clientContact }}</span>
             }
@@ -99,6 +111,12 @@
           </div>
           <div class="meta">
             {{ orderTypeLabel(order.orderType) }}
+            @if (order.clientName) {
+              <span>· {{ order.clientName }}</span>
+            }
+            @if (order.clientPhone) {
+              <span>· {{ order.clientPhone }}</span>
+            }
             @if (order.clientContact) {
               <span>· {{ order.clientContact }}</span>
             }
