@@ -42,6 +42,7 @@ export interface Order {
   paymentStatus: string;
   paymentMethod?: PaymentMethod;
   clientContact?: string;
+  clientName?: string;
   clientPhone?: string;
   items: OrderItem[];
   total: number;

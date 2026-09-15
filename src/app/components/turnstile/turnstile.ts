@@ -61,6 +61,10 @@ export class TurnstileComponent {
       return;
     }
 
+    if (environment.turnstileSiteKey.startsWith('${')) {
+      return;
+    }
+
     this.#widgetId = window.turnstile.render(container, {
       sitekey: environment.turnstileSiteKey,
       theme: 'dark',
