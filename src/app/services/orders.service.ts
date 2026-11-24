@@ -49,6 +49,8 @@ export interface Order {
   createdAt: string;
   status: OrderStatus;
   cancelReason?: string | null;
+  /** Nombre de quien cobró el pedido (null si está pendiente o es anterior al registro). */
+  paidByName?: string | null;
   correctedAt?: string | null;
 }
 

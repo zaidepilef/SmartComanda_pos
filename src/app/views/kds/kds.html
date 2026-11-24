@@ -33,6 +33,9 @@
               <span>· {{ order.clientContact }}</span>
             }
           </div>
+          @if (order.paidByName) {
+            <div class="paid-by">💳 Cobró {{ order.paidByName }}</div>
+          }
           <ul class="items">
             @for (item of order.items; track $index) {
               <li>
@@ -77,6 +80,9 @@
               <span>· {{ order.clientContact }}</span>
             }
           </div>
+          @if (order.paidByName) {
+            <div class="paid-by">💳 Cobró {{ order.paidByName }}</div>
+          }
           <ul class="items">
             @for (item of order.items; track $index) {
               <li>
@@ -121,6 +127,9 @@
               <span>· {{ order.clientContact }}</span>
             }
           </div>
+          @if (order.paidByName) {
+            <div class="paid-by">💳 Cobró {{ order.paidByName }}</div>
+          }
           <ul class="items">
             @for (item of order.items; track $index) {
               <li>
