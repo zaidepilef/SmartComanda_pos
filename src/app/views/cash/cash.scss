@@ -250,3 +250,9 @@
   outline: none;
   resize: vertical;
 }
+
+.cash-total.summary {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+}

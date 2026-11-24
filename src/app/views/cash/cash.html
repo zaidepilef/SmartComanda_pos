@@ -18,7 +18,7 @@
       }
     </div>
 
-    <div class="cash-total">
+    <div class="cash-total summary">
       <div class="lbl">Ventas registradas: {{ closed.orderCount }}</div>
       <div class="val dif {{ totalDifference(closed) < 0 ? 'neg' : totalDifference(closed) > 0 ? 'pos' : 'zero' }}">
         Diferencia {{ formatSignedCLP(totalDifference(closed)) }}
