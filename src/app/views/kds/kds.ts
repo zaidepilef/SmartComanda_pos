@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 
+import { DeliveryInfo } from '../../components/delivery-info/delivery-info';
 import { ToastService } from '../../components/toast/toast.service';
 import {
   Order,
@@ -30,7 +31,7 @@ const formatCLP = (value: number): string =>
 
 @Component({
   selector: 'app-kds',
-  imports: [],
+  imports: [DeliveryInfo],
   templateUrl: './kds.html',
   styleUrls: ['./kds.scss'],
 })

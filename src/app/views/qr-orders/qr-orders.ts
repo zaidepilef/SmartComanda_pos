@@ -2,6 +2,7 @@ import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
+import { DeliveryInfo } from '../../components/delivery-info/delivery-info';
 import { PosModal } from '../../components/pos-modal/pos-modal';
 import { ToastService } from '../../components/toast/toast.service';
 import { AuthService } from '../../services/auth.service';
@@ -29,7 +30,7 @@ interface CorrectionLine {
  */
 @Component({
   selector: 'app-qr-orders',
-  imports: [FormsModule, PosModal],
+  imports: [FormsModule, PosModal, DeliveryInfo],
   templateUrl: './qr-orders.html',
   styleUrls: ['./qr-orders.scss'],
 })
@@ -90,22 +91,26 @@ export class QrOrdersView implements OnInit, OnDestroy {
     this.#orderService
       .list({
         branchId: this.branchId,
-        orderType: 'qr',
+        orderType: ['qr', 'delivery'],
         paymentStatus: 'pending',
         statuses: ['new'],
         limit: 100,
       })
       .subscribe({
         next: (orders) => {
+          // Solo los domicilios pedidos desde la app (con dirección); los del POS se cobran al crearlos.
+          const appOrders = orders.filter(
+            (order) => order.orderType === 'qr' || Boolean(order.deliveryAddress)
+          );
           // Los más antiguos primero: son los que llevan más tiempo esperando.
-          this.orders.set([...orders].reverse());
+          this.orders.set([...appOrders].reverse());
           this.now.set(Date.now());
           this.error.set('');
           this.loading.set(false);
         },
         error: () => {
           this.loading.set(false);
-          this.error.set('No se pudieron cargar los pedidos QR.');
+          this.error.set('No se pudieron cargar los pedidos de la app.');
         },
       });
   }

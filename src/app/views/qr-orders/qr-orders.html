@@ -2,7 +2,7 @@
   <div class="qr-head">
     <div>
       <h2>Pedidos QR por cobrar</h2>
-      <p class="sub">El cliente pidió desde su teléfono. Al cobrarlo, el pedido pasa a cocina.</p>
+      <p class="sub">El cliente pidió desde su teléfono (retiro o domicilio). Al cobrarlo, el pedido pasa a cocina.</p>
     </div>
     <span class="pill">{{ orders().length }} pendientes</span>
   </div>
@@ -31,6 +31,7 @@
               <span class="phone">{{ order.clientPhone }}</span>
             }
           </div>
+          <app-delivery-info [order]="order" />
           <ul class="items">
             @for (item of order.items; track $index) {
               <li>
@@ -49,7 +50,7 @@
           </div>
         </article>
       } @empty {
-        <div class="empty">No hay pedidos QR esperando cobro.</div>
+        <div class="empty">No hay pedidos de la app esperando cobro.</div>
       }
     </div>
   }

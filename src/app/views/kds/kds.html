@@ -33,6 +33,7 @@
               <span>· {{ order.clientContact }}</span>
             }
           </div>
+          <app-delivery-info [order]="order" />
           @if (order.paidByName) {
             <div class="paid-by">💳 Cobró {{ order.paidByName }}</div>
           }
@@ -80,6 +81,7 @@
               <span>· {{ order.clientContact }}</span>
             }
           </div>
+          <app-delivery-info [order]="order" />
           @if (order.paidByName) {
             <div class="paid-by">💳 Cobró {{ order.paidByName }}</div>
           }
@@ -127,6 +129,7 @@
               <span>· {{ order.clientContact }}</span>
             }
           </div>
+          <app-delivery-info [order]="order" />
           @if (order.paidByName) {
             <div class="paid-by">💳 Cobró {{ order.paidByName }}</div>
           }
