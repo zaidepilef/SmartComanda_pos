@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 
 import { ToastService } from '../../components/toast/toast.service';
 import {
+  CashClosureLine,
   CashSession,
   CashSessionService,
   ClosingAmounts,
@@ -17,7 +18,12 @@ const formatCLP = (value: number): string =>
   `$${Math.round(value).toLocaleString('es-CL')}`;
 
 const formatSignedCLP = (value: number): string =>
-  `${value < 0 ? '−' : '+'}${formatCLP(Math.abs(value))}`;
+  Math.round(value) === 0 ? formatCLP(0) : `${value < 0 ? '−' : '+'}${formatCLP(Math.abs(value))}`;
+
+const startOfToday = (): number => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+};
 
 @Component({
   selector: 'app-cash',
@@ -34,31 +40,44 @@ export class CashView {
   readonly cashSession = this.#store.cashSession;
 
   openingAmount: number | null = null;
+  readonly loading = signal(true);
   readonly opening = signal(false);
   readonly error = signal('');
   readonly closing = signal(false);
   readonly closingFormOpen = signal(false);
+  readonly closedSession = signal<CashSession | null>(null);
   closingAmounts: ClosingAmounts = {};
-  closedSession: CashSession | null = null;
+  closingNote = '';
 
   constructor() {
-    const branchId = this.#store.branch()?._id;
-
-    if (!branchId) {
+    if (!this.#store.branch()?._id) {
       void this.#router.navigate(['/branch-picker']);
       return;
     }
 
-    if (this.#store.cashSession() === null) {
-      this.#cashSessionService.current(branchId).subscribe({
-        next: (session) => this.#store.setCashSession(session),
-        error: (err) => {
-          if (err.status !== 404) {
-            this.error.set('No se pudo consultar la caja.');
-          }
-        },
-      });
+    // Siempre se consulta la API: la caja guardada en el navegador puede estar desactualizada.
+    this.#loadCurrent();
+  }
+
+  #loadCurrent(): void {
+    const branchId = this.#store.branch()?._id;
+
+    if (!branchId) {
+      return;
     }
+
+    this.loading.set(true);
+
+    this.#cashSessionService.current(branchId).subscribe({
+      next: (session) => {
+        this.#store.setCashSession(session);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.error.set(err.error?.error ?? 'No se pudo consultar la caja.');
+      },
+    });
   }
 
   openSession(): void {
@@ -86,38 +105,38 @@ export class CashView {
       },
       error: (err) => {
         this.opening.set(false);
+
+        if (err.status === 409) {
+          // Ya había una caja abierta (quizá desde otro equipo): se muestra para cerrarla.
+          this.#toast.error('Ya hay una caja abierta en esta sucursal.');
+          this.#loadCurrent();
+          return;
+        }
+
         this.error.set(err.error?.error ?? 'No se pudo abrir la caja.');
       },
     });
   }
 
-  totalSession(): number {
+  paymentMethods(): PaymentMethod[] {
     const session = this.cashSession();
+    const branchMethods = this.#store.branch()?.paymentMethods ?? PAYMENT_METHODS;
 
-    if (!session) {
-      return 0;
-    }
-
-    const totals = session.totals ?? {
-      cash: 0,
-      debit: 0,
-      credit: 0,
-      transfer: 0,
-    };
-
-    return (
-      totals.cash +
-      totals.debit +
-      totals.credit +
-      totals.transfer +
-      session.openingAmount
+    return PAYMENT_METHODS.filter(
+      (method) => branchMethods.includes(method) || (session?.totals?.[method] ?? 0) !== 0
     );
   }
 
   paymentTotal(method: PaymentMethod): number {
-    const session = this.cashSession();
+    return this.cashSession()?.totals?.[method] ?? 0;
+  }
 
-    return session?.totals?.[method] ?? 0;
+  expected(method: PaymentMethod): number {
+    return this.cashSession()?.expected?.[method] ?? this.paymentTotal(method);
+  }
+
+  salesTotal(): number {
+    return PAYMENT_METHODS.reduce((sum, method) => sum + this.paymentTotal(method), 0);
   }
 
   paymentLabel(method: PaymentMethod): string {
@@ -128,36 +147,35 @@ export class CashView {
     return this.#store.branch()?.name ?? 'la sucursal';
   }
 
-  openedAtLabel(session: CashSession): string {
-    return new Date(session.openedAt).toLocaleString('es-CL', {
+  dateTimeLabel(value: string | null): string {
+    if (!value) {
+      return '';
+    }
+
+    return new Date(value).toLocaleString('es-CL', {
+      weekday: 'short',
       day: '2-digit',
       month: '2-digit',
+      year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     });
   }
 
-  paymentMethods(): PaymentMethod[] {
-    const session = this.cashSession();
-
-    return session ? (Object.keys(session.totals) as PaymentMethod[]) : [];
+  /** La caja se abrió antes de hoy y quedó sin cerrar. */
+  isStale(session: CashSession): boolean {
+    return new Date(session.openedAt).getTime() < startOfToday();
   }
 
   startClose(): void {
-    const session = this.cashSession();
-
-    if (!session || this.closing()) {
+    if (!this.cashSession() || this.closing()) {
       return;
     }
 
-    const totals = session.totals ?? {
-      cash: 0,
-      debit: 0,
-      credit: 0,
-      transfer: 0,
-    };
-
-    this.closingAmounts = { ...totals };
+    this.closingAmounts = Object.fromEntries(
+      this.paymentMethods().map((method) => [method, this.expected(method)])
+    );
+    this.closingNote = '';
     this.closingFormOpen.set(true);
     this.error.set('');
   }
@@ -171,6 +189,10 @@ export class CashView {
     this.closingAmounts = {};
   }
 
+  countedDifference(method: PaymentMethod): number {
+    return (this.closingAmounts[method] ?? 0) - this.expected(method);
+  }
+
   closeSession(): void {
     const session = this.cashSession();
 
@@ -178,11 +200,11 @@ export class CashView {
       return;
     }
 
-    for (const method of PAYMENT_METHODS) {
-      const amount = this.closingAmounts[method] ?? 0;
+    for (const method of this.paymentMethods()) {
+      const amount = this.closingAmounts[method];
 
-      if (amount < 0 || Number.isNaN(amount)) {
-        this.error.set(`El monto de ${this.paymentLabel(method)} no puede ser negativo.`);
+      if (amount === null || amount === undefined || amount < 0 || Number.isNaN(amount)) {
+        this.error.set(`Ingresa el monto contado de ${this.paymentLabel(method)} (0 o más).`);
         return;
       }
     }
@@ -190,29 +212,41 @@ export class CashView {
     this.closing.set(true);
     this.error.set('');
 
-    this.#cashSessionService.close(session._id, { closingAmounts: this.closingAmounts }).subscribe({
-      next: (closed) => {
-        this.closing.set(false);
-        this.closingFormOpen.set(false);
-        this.closedSession = closed;
-        this.#store.setCashSession(null);
-        this.#toast.ok('Caja cerrada correctamente.');
-      },
-      error: (err) => {
-        this.closing.set(false);
-        this.error.set(err.error?.error ?? 'No se pudo cerrar la caja.');
-      },
-    });
+    const note = this.closingNote.trim();
+
+    this.#cashSessionService
+      .close(session._id, { closingAmounts: this.closingAmounts, note: note || undefined })
+      .subscribe({
+        next: (closed) => {
+          this.closing.set(false);
+          this.closingFormOpen.set(false);
+          this.closedSession.set(closed);
+          this.#store.setCashSession(null);
+          this.#toast.ok('Caja cerrada correctamente.');
+        },
+        error: (err) => {
+          this.closing.set(false);
+
+          if (err.status === 409) {
+            this.#toast.error('Esta caja ya estaba cerrada.');
+            this.closingFormOpen.set(false);
+            this.#loadCurrent();
+            return;
+          }
+
+          this.error.set(err.error?.error ?? 'No se pudo cerrar la caja.');
+        },
+      });
   }
 
-  closingDifference(method: PaymentMethod): number {
-    const closed = this.closedSession;
+  closureLines(closed: CashSession): CashClosureLine[] {
+    return (closed.closure ?? []).filter(
+      (line) => line.expected !== 0 || line.counted !== 0 || this.paymentMethods().includes(line.method)
+    );
+  }
 
-    if (!closed) {
-      return 0;
-    }
-
-    return closed.difference?.[method] ?? 0;
+  totalDifference(closed: CashSession): number {
+    return (closed.closure ?? []).reduce((sum, line) => sum + line.difference, 0);
   }
 
   formatSignedCLP(value: number): string {
@@ -228,11 +262,6 @@ export class CashView {
   }
 
   finishClosed(): void {
-    this.closedSession = null;
-    void this.#router.navigate(['/tenant-picker']);
-  }
-
-  logout(): void {
-    this.#router.navigate(['/tenant-picker']);
+    this.closedSession.set(null);
   }
 }

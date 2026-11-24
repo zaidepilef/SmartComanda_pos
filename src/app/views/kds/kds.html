@@ -33,6 +33,10 @@
               <span>· {{ order.clientContact }}</span>
             }
           </div>
+          <app-delivery-info [order]="order" />
+          @if (order.paidByName) {
+            <div class="paid-by">💳 Cobró {{ order.paidByName }}</div>
+          }
           <ul class="items">
             @for (item of order.items; track $index) {
               <li>
@@ -77,6 +81,10 @@
               <span>· {{ order.clientContact }}</span>
             }
           </div>
+          <app-delivery-info [order]="order" />
+          @if (order.paidByName) {
+            <div class="paid-by">💳 Cobró {{ order.paidByName }}</div>
+          }
           <ul class="items">
             @for (item of order.items; track $index) {
               <li>
@@ -121,6 +129,10 @@
               <span>· {{ order.clientContact }}</span>
             }
           </div>
+          <app-delivery-info [order]="order" />
+          @if (order.paidByName) {
+            <div class="paid-by">💳 Cobró {{ order.paidByName }}</div>
+          }
           <ul class="items">
             @for (item of order.items; track $index) {
               <li>
@@ -132,6 +144,9 @@
             <button type="button" class="advance" (click)="advance(order)">
               {{ advanceLabel(order) }}
             </button>
+            @if (canCancel(order)) {
+              <button type="button" class="cancel" (click)="cancel(order)">✕</button>
+            }
           </div>
         </article>
       } @empty {

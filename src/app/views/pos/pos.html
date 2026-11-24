@@ -279,6 +279,12 @@
             <div class="row"><span>Puntos</span><span>+{{ order.pointsEarned }} ⭐</span></div>
           }
           <div class="row"><span>Tipo</span><span>{{ orderTypeLabel(order.order.orderType) }}</span></div>
+          @if (order.order.deliveryAddress) {
+            <div class="row"><span>Entrega</span><span>{{ order.order.deliveryAddress }}</span></div>
+            @if (order.order.deliveryReference) {
+              <div class="row"><span>Ref.</span><span>{{ order.order.deliveryReference }}</span></div>
+            }
+          }
         </div>
         <div class="receipt-items">
           @for (item of order.order.items; track $index) {
