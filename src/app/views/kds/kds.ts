@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 
 import { ToastService } from '../../components/toast/toast.service';
 import {
@@ -8,6 +8,8 @@ import {
   ORDER_TYPE_LABELS,
 } from '../../services/orders.service';
 import { PosStore } from '../../store/pos-store.service';
+import { AuthService } from '../../services/auth.service';
+import { canDo } from '../../services/roles';
 
 const POLL_INTERVAL_MS = 10000;
 
@@ -36,6 +38,10 @@ export class KdsView implements OnInit, OnDestroy {
   readonly #orderService = inject(OrderService);
   readonly #store = inject(PosStore);
   readonly #toast = inject(ToastService);
+  readonly #authService = inject(AuthService);
+
+  /** Solo Encargado o superior anula pedidos (con motivo). */
+  readonly canManage = computed(() => canDo(this.#authService.user(), 'cancel'));
 
   readonly loading = signal(false);
   readonly error = signal('');
@@ -80,6 +86,7 @@ export class KdsView implements OnInit, OnDestroy {
       .list({
         branchId: this.branchId,
         statuses: ['new', 'preparing', 'ready'],
+        kitchen: true,
         limit: 200,
       })
       .subscribe({
@@ -150,28 +157,31 @@ export class KdsView implements OnInit, OnDestroy {
   }
 
   cancel(order: Order): void {
-    if (!confirm(`¿Cancelar el pedido #${order.number}?`)) {
+    const paidNote = order.paymentStatus === 'paid' ? ' Se descontará de la caja.' : '';
+    const reason = prompt(`Motivo para anular el pedido #${order.number}.${paidNote}`)?.trim();
+
+    if (!reason) {
       return;
     }
 
-    this.#orderService.updateStatus(order._id, 'cancelled').subscribe({
+    this.#orderService.cancel(order._id, reason.slice(0, 200)).subscribe({
       next: () => {
         this.#load(false);
-        this.#toast.ok(`Pedido #${order.number} cancelado.`);
+        this.#toast.ok(`Pedido #${order.number} anulado.`);
       },
       error: (err) => {
-        if (err.status === 409) {
-          this.#load(false);
-          return;
-        }
-
-        this.#toast.error(err.error?.error ?? 'No se pudo cancelar el pedido.');
+        this.#load(false);
+        this.#toast.error(
+          err.status === 409
+            ? 'No se puede anular: la caja donde se cobró ya está cerrada o el pedido cambió.'
+            : (err.error?.error ?? 'No se pudo anular el pedido.')
+        );
       },
     });
   }
 
   canCancel(order: Order): boolean {
-    return order.status === 'new' || order.status === 'preparing';
+    return this.canManage() && ['new', 'preparing', 'ready'].includes(order.status);
   }
 
   advanceLabel(order: Order): string {

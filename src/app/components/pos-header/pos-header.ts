@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
@@ -6,6 +6,7 @@ import { BranchFlowService } from '../../services/branch-flow.service';
 import { TenantService } from '../../services/tenants.service';
 import { ToastService } from '../toast/toast.service';
 import { PosStore } from '../../store/pos-store.service';
+import { canDo, roleLabel } from '../../services/roles';
 
 @Component({
   selector: 'app-pos-header',
@@ -27,6 +28,10 @@ export class PosHeader implements OnInit, OnDestroy {
   readonly user = this.#authService.user;
 
   readonly menuOpen = signal(false);
+
+  readonly canTakeOrders = computed(() => canDo(this.user(), 'orders'));
+  readonly canUseCash = computed(() => canDo(this.user(), 'cash'));
+  readonly roleName = computed(() => roleLabel(this.user()));
 
   readonly now = signal(new Date());
 
@@ -139,9 +144,5 @@ export class PosHeader implements OnInit, OnDestroy {
       day: '2-digit',
       month: 'short',
     });
-  }
-
-  goToCaja(): void {
-    void this.#router.navigate(['/cash']);
   }
 }

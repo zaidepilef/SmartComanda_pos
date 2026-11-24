@@ -2,7 +2,9 @@ import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { ToastService } from '../components/toast/toast.service';
+import { AuthService } from '../services/auth.service';
 import { BranchService } from '../services/branches.service';
+import { homeRoute } from '../services/roles';
 import { Tenant } from '../services/tenants.service';
 import { PosStore } from '../store/pos-store.service';
 
@@ -12,6 +14,7 @@ export class BranchFlowService {
   readonly #store = inject(PosStore);
   readonly #toast = inject(ToastService);
   readonly #router = inject(Router);
+  readonly #auth = inject(AuthService);
 
   selectTenant(tenant: Tenant): void {
     this.#store.setTenant(tenant);
@@ -20,7 +23,7 @@ export class BranchFlowService {
       next: (branches) => {
         if (branches.length === 1) {
           this.#store.setBranch(branches[0]);
-          void this.#router.navigate(['/pos']);
+          void this.#router.navigate([homeRoute(this.#auth.user())]);
           return;
         }
 
@@ -48,7 +51,7 @@ export class BranchFlowService {
         }
 
         this.#store.setBranch(branch);
-        void this.#router.navigate(['/pos']);
+        void this.#router.navigate([homeRoute(this.#auth.user())]);
       },
       error: () => {
         this.#toast.error('No se pudieron cargar las sucursales.');

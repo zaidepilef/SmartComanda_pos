@@ -1,55 +1,52 @@
 <div class="cash-wrap">
-  @if (!cashSession()) {
-    <div class="cash-card open-card">
-      <h2>Abrir caja</h2>
-      <p>No hay una sesión de caja abierta para {{ branchName() }}. Ábrela para poder cobrar pedidos.</p>
-
-      @if (error()) {
-        <div class="error" role="alert">{{ error() }}</div>
-      }
-
-      <div class="sec">
-        <label for="openingAmount">Monto inicial</label>
-        <input
-          id="openingAmount"
-          type="number"
-          min="0"
-          step="500"
-          [(ngModel)]="openingAmount"
-          name="openingAmount"
-          placeholder="0"
-        />
-      </div>
-
-      <button type="button" class="btn-primary" (click)="openSession()" [disabled]="opening()">
-        {{ opening() ? 'Abriendo...' : 'Abrir caja' }}
-      </button>
-    </div>
-  } @else if (closedSession; as closed) {
+  @if (closedSession(); as closed) {
     <h2>Caja cerrada — {{ branchName() }}</h2>
-    <p class="sub">Cerrada el {{ openedAtLabel(closed) }} con {{ formatCLP(closed.openingAmount) }} de apertura</p>
+    <p class="sub">
+      Abierta el {{ dateTimeLabel(closed.openedAt) }} · cerrada el {{ dateTimeLabel(closed.closedAt) }}
+    </p>
 
     <div class="cash-grid">
-      @for (method of paymentMethods(); track method) {
+      @for (line of closureLines(closed); track line.method) {
         <div class="cash-card">
-          <div class="lbl">{{ paymentLabel(method) }}</div>
-          <div class="val">{{ formatCLP(closed.totals[method] ?? 0) }}</div>
-          <div class="dif {{ (closingDifference(method) < 0) ? 'neg' : 'pos' }}">
-            {{ formatSignedCLP(closingDifference(method)) }}
+          <div class="lbl">{{ paymentLabel(line.method) }}</div>
+          <div class="val">{{ formatCLP(line.counted) }}</div>
+          <div class="hint">Esperado {{ formatCLP(line.expected) }}</div>
+          <div class="dif {{ line.difference < 0 ? 'neg' : line.difference > 0 ? 'pos' : 'zero' }}">
+            {{ formatSignedCLP(line.difference) }}
           </div>
         </div>
       }
     </div>
 
     <div class="cash-total">
-      <div class="lbl">Ventas registradas</div>
-      <div class="val">{{ closed.orderCount }}</div>
+      <div class="lbl">Ventas registradas: {{ closed.orderCount }}</div>
+      <div class="val dif {{ totalDifference(closed) < 0 ? 'neg' : totalDifference(closed) > 0 ? 'pos' : 'zero' }}">
+        Diferencia {{ formatSignedCLP(totalDifference(closed)) }}
+      </div>
     </div>
 
+    @if (closed.closingNote) {
+      <p class="sub">📝 {{ closed.closingNote }}</p>
+    }
+
     <button type="button" class="btn-primary" (click)="finishClosed()">Continuar</button>
+  } @else if (loading()) {
+    <p class="sub">Consultando la caja…</p>
   } @else if (cashSession(); as session) {
     <h2>Caja — {{ branchName() }}</h2>
-    <p class="sub">Abierta el {{ openedAtLabel(session) }} con {{ formatCLP(session.openingAmount) }}</p>
+    <p class="sub">
+      Abierta el {{ dateTimeLabel(session.openedAt) }}
+      @if (session.openedByName) {
+        por {{ session.openedByName }}
+      }
+      con {{ formatCLP(session.openingAmount) }} de apertura
+    </p>
+
+    @if (isStale(session)) {
+      <div class="warning" role="alert">
+        ⚠️ Caja abierta desde {{ dateTimeLabel(session.openedAt) }}. Ciérrala con el arqueo antes de seguir vendiendo hoy.
+      </div>
+    }
 
     <div class="cash-grid">
       @for (method of paymentMethods(); track method) {
@@ -65,9 +62,10 @@
     </div>
 
     <div class="cash-total">
-      <div class="lbl">Total en caja</div>
-      <div class="val">{{ formatCLP(totalSession()) }}</div>
+      <div class="lbl">Efectivo esperado en caja (apertura + efectivo)</div>
+      <div class="val">{{ formatCLP(expected('cash')) }}</div>
     </div>
+    <p class="sub">Total vendido: {{ formatCLP(salesTotal()) }}</p>
 
     @if (error()) {
       <div class="error" role="alert">{{ error() }}</div>
@@ -76,7 +74,7 @@
     @if (closingFormOpen()) {
       <div class="cash-card close-card">
         <h3>Cerrar caja</h3>
-        <p class="sub">Verifica el dinero contado por método de pago.</p>
+        <p class="sub">Cuenta el dinero y anota lo que hay por medio de pago. La diferencia queda registrada.</p>
 
         <div class="close-grid">
           @for (method of paymentMethods(); track method) {
@@ -87,12 +85,24 @@
                 type="number"
                 min="0"
                 step="100"
-                [ngModel]="closingAmounts[method] ?? 0"
+                [ngModel]="closingAmounts[method]"
                 (ngModelChange)="closingAmounts[method] = $event"
                 name="close{{ method }}"
               />
+              <div class="hint">
+                Esperado {{ formatCLP(expected(method)) }}
+                <span class="dif {{ countedDifference(method) < 0 ? 'neg' : countedDifference(method) > 0 ? 'pos' : 'zero' }}">
+                  {{ formatSignedCLP(countedDifference(method)) }}
+                </span>
+              </div>
             </div>
           }
+        </div>
+
+        <div class="sec">
+          <label for="closingNote">Nota (opcional)</label>
+          <textarea id="closingNote" rows="2" maxlength="500" [(ngModel)]="closingNote" name="closingNote"
+            placeholder="Ej: faltan $2.000 por vuelto mal dado"></textarea>
         </div>
 
         <div class="actions">
@@ -109,5 +119,31 @@
     }
 
     <button type="button" class="btn-ghost" (click)="goToPos()">← Volver a pedidos</button>
+  } @else {
+    <div class="cash-card open-card">
+      <h2>Abrir caja</h2>
+      <p>No hay una caja abierta para {{ branchName() }}. Ábrela para poder cobrar pedidos.</p>
+
+      @if (error()) {
+        <div class="error" role="alert">{{ error() }}</div>
+      }
+
+      <div class="sec">
+        <label for="openingAmount">Monto inicial (efectivo en la caja)</label>
+        <input
+          id="openingAmount"
+          type="number"
+          min="0"
+          step="500"
+          [(ngModel)]="openingAmount"
+          name="openingAmount"
+          placeholder="0"
+        />
+      </div>
+
+      <button type="button" class="btn-primary" (click)="openSession()" [disabled]="opening()">
+        {{ opening() ? 'Abriendo...' : 'Abrir caja' }}
+      </button>
+    </div>
   }
 </div>

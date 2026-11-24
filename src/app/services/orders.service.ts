@@ -39,7 +39,7 @@ export interface Order {
   foodtruckId: string;
   number: number;
   orderType: OrderType;
-  paymentStatus: string;
+  paymentStatus: 'pending' | 'paid' | 'refunded';
   paymentMethod?: PaymentMethod;
   clientContact?: string;
   clientName?: string;
@@ -48,6 +48,13 @@ export interface Order {
   total: number;
   createdAt: string;
   status: OrderStatus;
+  cancelReason?: string | null;
+  correctedAt?: string | null;
+}
+
+export interface PayOrderResponse {
+  order: Order;
+  pointsEarned?: number;
 }
 
 export interface CreateOrderPayload {
@@ -81,6 +88,10 @@ export class OrderService {
   list(params: {
     branchId: string;
     statuses?: OrderStatus[];
+    orderType?: OrderType;
+    paymentStatus?: Order['paymentStatus'];
+    /** Vista de cocina: excluye pedidos QR sin cobrar. */
+    kitchen?: boolean;
     limit?: number;
   }): Observable<Order[]> {
     let httpParams = new HttpParams().set('branchId', params.branchId);
@@ -91,6 +102,18 @@ export class OrderService {
       });
     }
 
+    if (params.orderType) {
+      httpParams = httpParams.set('orderType', params.orderType);
+    }
+
+    if (params.paymentStatus) {
+      httpParams = httpParams.set('paymentStatus', params.paymentStatus);
+    }
+
+    if (params.kitchen) {
+      httpParams = httpParams.set('kitchen', 'true');
+    }
+
     if (params.limit) {
       httpParams = httpParams.set('limit', String(params.limit));
     }
@@ -98,6 +121,20 @@ export class OrderService {
     return this.#http.get<Order[]>(`${environment.apiUrl}/api/orders`, {
       params: httpParams,
     });
+  }
+
+  pay(id: string, paymentMethod: PaymentMethod): Observable<PayOrderResponse> {
+    return this.#http.patch<PayOrderResponse>(`${environment.apiUrl}/api/orders/${id}/pay`, {
+      paymentMethod,
+    });
+  }
+
+  cancel(id: string, reason: string): Observable<Order> {
+    return this.#http.post<Order>(`${environment.apiUrl}/api/orders/${id}/cancel`, { reason });
+  }
+
+  correct(id: string, items: { dishId: string; quantity: number }[]): Observable<Order> {
+    return this.#http.put<Order>(`${environment.apiUrl}/api/orders/${id}/items`, { items });
   }
 
   updateStatus(id: string, status: OrderStatus): Observable<Order> {

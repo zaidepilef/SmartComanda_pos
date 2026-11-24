@@ -24,11 +24,23 @@ export interface CashSession {
   openingAmount: number;
   status: CashSessionStatus;
   totals: CashSessionTotals;
+  /** Lo que debería haber por medio: efectivo = apertura + ventas en efectivo. */
+  expected: CashSessionTotals;
+  openedByName: string | null;
   orderCount: number;
   closedAt: string | null;
   closedBy: string | null;
+  closingNote?: string | null;
+  closure?: CashClosureLine[];
   closingAmounts?: CashSessionTotals | null;
   difference?: CashSessionTotals | null;
+}
+
+export interface CashClosureLine {
+  method: PaymentMethod;
+  expected: number;
+  counted: number;
+  difference: number;
 }
 
 export interface OpenCashSessionPayload {
@@ -46,15 +58,16 @@ export class CashSessionService {
     return this.#http.post<CashSession>(`${environment.apiUrl}/api/cash-sessions`, payload);
   }
 
-  current(branchId: string): Observable<CashSession> {
+  /** Caja abierta de la sucursal, o null si no hay. */
+  current(branchId: string): Observable<CashSession | null> {
     const params = new HttpParams().set('branchId', branchId);
 
-    return this.#http.get<CashSession>(`${environment.apiUrl}/api/cash-sessions/current`, {
+    return this.#http.get<CashSession | null>(`${environment.apiUrl}/api/cash-sessions/current`, {
       params,
     });
   }
 
-  close(id: string, payload: { closingAmounts?: ClosingAmounts }): Observable<CashSession> {
+  close(id: string, payload: { closingAmounts?: ClosingAmounts; note?: string }): Observable<CashSession> {
     return this.#http.post<CashSession>(
       `${environment.apiUrl}/api/cash-sessions/${id}/close`,
       payload

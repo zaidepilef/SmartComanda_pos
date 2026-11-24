@@ -1,0 +1,131 @@
+<div class="qr-wrap">
+  <div class="qr-head">
+    <div>
+      <h2>Pedidos QR por cobrar</h2>
+      <p class="sub">El cliente pidió desde su teléfono. Al cobrarlo, el pedido pasa a cocina.</p>
+    </div>
+    <span class="pill">{{ orders().length }} pendientes</span>
+  </div>
+
+  @if (!cashSession()) {
+    <div class="warning" role="alert">⚠️ No hay caja abierta: ábrela en <b>Caja</b> para poder cobrar.</div>
+  }
+
+  @if (error()) {
+    <div class="error-banner">{{ error() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="empty">Cargando…</div>
+  } @else {
+    <div class="qr-grid">
+      @for (order of orders(); track order._id) {
+        <article class="qr-card" [class.timed]="isLate(order)">
+          <div class="card-head">
+            <span class="num">#{{ order.number }}</span>
+            <span class="time">{{ ageLabel(order) }}</span>
+          </div>
+          <div class="customer">
+            {{ order.clientName || 'Cliente' }}
+            @if (order.clientPhone) {
+              <span class="phone">{{ order.clientPhone }}</span>
+            }
+          </div>
+          <ul class="items">
+            @for (item of order.items; track $index) {
+              <li>
+                <span class="q">{{ item.quantity }}×</span> {{ item.name }}
+                <span class="price">{{ formatCLP(item.price * item.quantity) }}</span>
+              </li>
+            }
+          </ul>
+          <div class="total">{{ formatCLP(order.total) }}</div>
+          <div class="card-actions">
+            <button type="button" class="btn-primary" (click)="startCharge(order)">Cobrar</button>
+            @if (canManage()) {
+              <button type="button" class="btn-ghost" (click)="startCorrect(order)">Corregir</button>
+              <button type="button" class="btn-ghost danger" (click)="cancel(order)">Anular</button>
+            }
+          </div>
+        </article>
+      } @empty {
+        <div class="empty">No hay pedidos QR esperando cobro.</div>
+      }
+    </div>
+  }
+</div>
+
+<app-pos-modal [open]="charging() !== null" [title]="'Cobrar pedido #' + (charging()?.number ?? '')" (closed)="closeCharge()">
+  @if (charging(); as order) {
+    <div class="sec">
+      <label>Método de pago</label>
+      <div class="opt-grid">
+        @for (method of branchPaymentMethods(); track method) {
+          <button
+            type="button"
+            class="opt"
+            [class.active]="paymentMethod() === method"
+            (click)="paymentMethod.set(method); cashReceived.set(null)"
+          >
+            {{ paymentLabel(method) }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (paymentMethod() === 'cash') {
+      <div class="sec">
+        <label for="qrCashReceived">Monto recibido</label>
+        <input
+          id="qrCashReceived"
+          type="number"
+          min="0"
+          [ngModel]="cashReceived()"
+          (ngModelChange)="cashReceived.set($event)"
+          name="qrCashReceived"
+          placeholder="0"
+        />
+        <div class="change-row">
+          <span>Vuelto</span>
+          <span class="change">{{ formatCLP(cashChange()) }}</span>
+        </div>
+      </div>
+    } @else if (paymentMethod()) {
+      <p class="sub">Confirma cuando el pago con {{ paymentLabel(paymentMethod()!) }} esté aprobado.</p>
+    }
+  }
+
+  <button
+    foot
+    type="button"
+    class="btn-primary"
+    (click)="confirmCharge()"
+    [disabled]="!canConfirmPayment() || submitting()"
+  >
+    {{ submitting() ? 'Procesando...' : 'Confirmar pago' }} — {{ formatCLP(charging()?.total ?? 0) }}
+  </button>
+</app-pos-modal>
+
+<app-pos-modal [open]="correcting() !== null" [title]="'Corregir pedido #' + (correcting()?.number ?? '')" (closed)="closeCorrect()">
+  <p class="sub">Ajusta las cantidades. Los precios se recalculan al guardar.</p>
+  <ul class="correct-list">
+    @for (line of correctionLines(); track line.dishId) {
+      <li [class.removed]="line.quantity === 0">
+        <span class="name">{{ line.name }}</span>
+        <div class="qty-row">
+          <button type="button" (click)="changeLine(line, -1)" aria-label="Quitar uno">−</button>
+          <span class="qty">{{ line.quantity }}</span>
+          <button type="button" (click)="changeLine(line, 1)" aria-label="Agregar uno">+</button>
+        </div>
+      </li>
+    }
+  </ul>
+  <div class="change-row">
+    <span>Nuevo total</span>
+    <span class="change">{{ formatCLP(correctionTotal()) }}</span>
+  </div>
+
+  <button foot type="button" class="btn-primary" (click)="confirmCorrect()" [disabled]="submitting()">
+    {{ submitting() ? 'Guardando...' : 'Guardar corrección' }}
+  </button>
+</app-pos-modal>
