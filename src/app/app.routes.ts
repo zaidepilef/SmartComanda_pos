@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { authGuard } from './guards/auth.guard';
 import { contextGuard } from './guards/context.guard';
+import { roleGuard } from './guards/role.guard';
 
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./views/login/login').then((m) => m.LoginView) },
@@ -17,13 +18,18 @@ export const routes: Routes = [
   },
   {
     path: 'pos',
-    canActivate: [authGuard, contextGuard],
+    canActivate: [authGuard, roleGuard('orders'), contextGuard],
     loadComponent: () => import('./views/pos/pos').then((m) => m.PosView),
   },
   {
     path: 'cash',
-    canActivate: [authGuard, contextGuard],
+    canActivate: [authGuard, roleGuard('cash'), contextGuard],
     loadComponent: () => import('./views/cash/cash').then((m) => m.CashView),
+  },
+  {
+    path: 'qr',
+    canActivate: [authGuard, roleGuard('orders'), contextGuard],
+    loadComponent: () => import('./views/qr-orders/qr-orders').then((m) => m.QrOrdersView),
   },
   {
     path: 'kds',

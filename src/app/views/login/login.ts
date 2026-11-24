@@ -8,6 +8,7 @@ import { AuthService, authErrorMessage } from '../../services/auth.service';
 import { PosStore } from '../../store/pos-store.service';
 import { TurnstileComponent } from '../../components/turnstile/turnstile';
 
+import { homeRoute } from '../../services/roles';
 @Component({
   selector: 'app-login',
   imports: [FormsModule, TurnstileComponent],
@@ -68,7 +69,7 @@ export class LoginView {
     }
 
     if (this.#store.branch()) {
-      void this.#router.navigate(['/pos']);
+      void this.#router.navigate([homeRoute(this.#authService.user())]);
       return;
     }
 
@@ -105,7 +106,7 @@ export class LoginView {
 
         if (branches.length === 1) {
           this.#store.setBranch(branches[0]);
-          void this.#router.navigate(['/pos']);
+          void this.#router.navigate([homeRoute(this.#authService.user())]);
           return;
         }
 

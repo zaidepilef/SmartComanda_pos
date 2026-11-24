@@ -1,10 +1,10 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 
-export type UserRole = 'sysadmin' | 'owner' | 'admin' | 'cashier';
+export type UserRole = 'sysadmin' | 'owner' | 'admin' | 'cashier' | 'cook';
 
 export interface AuthUser {
   _id: string;
@@ -13,6 +13,8 @@ export interface AuthUser {
   email: string;
   status: string;
   role?: UserRole;
+  roles?: UserRole[];
+  branchId?: string;
   tenantId?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -77,6 +79,24 @@ export class AuthService {
 
   me(): Observable<AuthUser> {
     return this.#http.get<AuthUser>(`${environment.apiUrl}/api/auth/me`);
+  }
+
+  /** Devuelve el usuario actual, cargándolo desde la API si hace falta. */
+  async ensureUser(): Promise<AuthUser | null> {
+    if (!this.isAuthenticated()) {
+      return null;
+    }
+
+    if (this.#user() === null) {
+      try {
+        this.setUser(await firstValueFrom(this.me()));
+      } catch {
+        this.setToken(null);
+        return null;
+      }
+    }
+
+    return this.#user();
   }
 
   logout(): Observable<void> {

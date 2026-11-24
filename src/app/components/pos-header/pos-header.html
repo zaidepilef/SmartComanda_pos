@@ -29,9 +29,14 @@
     }
 
     <nav class="header-nav">
-      <a routerLink="/pos" routerLinkActive="active">Pedidos</a>
+      @if (canTakeOrders()) {
+        <a routerLink="/pos" routerLinkActive="active">Pedidos</a>
+        <a routerLink="/qr" routerLinkActive="active">Por cobrar</a>
+      }
       <a routerLink="/kds" routerLinkActive="active">Cocina</a>
-      <button (click)="goToCaja()">Caja</button>
+      @if (canUseCash()) {
+        <a routerLink="/cash" routerLinkActive="active">Caja</a>
+      }
     </nav>
 
     <div class="user-wrap">
@@ -48,6 +53,9 @@
             <div class="menu-name">{{ userNameLabel() }}</div>
             @if (user()?.email) {
               <div class="menu-email">{{ user()?.email }}</div>
+            }
+            @if (roleName()) {
+              <div class="menu-email">{{ roleName() }}</div>
             }
           </div>
           <button type="button" class="menu-item" (click)="goToBranchPicker()">

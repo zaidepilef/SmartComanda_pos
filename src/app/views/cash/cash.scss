@@ -211,3 +211,48 @@
   background: var(--panel2);
   color: var(--text);
 }
+.dif.zero {
+  color: var(--muted);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hint .dif {
+  margin-top: 0;
+}
+
+.warning {
+  background: rgba(255, 159, 28, 0.12);
+  border: 1px solid var(--accent2);
+  color: #ffc46b;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.sec textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  resize: vertical;
+}
+
+.cash-total.summary {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
