@@ -206,10 +206,13 @@ export class OrderService {
     return this.#http.put<Order>(`${environment.apiUrl}/api/orders/${id}/driver`, { driverId });
   }
 
-  /** Entrega y cobro en la puerta, en una sola operación. */
-  deliver(id: string, paymentMethod: CollectMethod, cashReceived?: number): Observable<DeliverOrderResponse> {
+  /**
+   * Entrega y cobro en la puerta, en una sola operación.
+   * Sin `paymentMethod` solo entrega: para pedidos que ya estaban pagados.
+   */
+  deliver(id: string, paymentMethod?: CollectMethod, cashReceived?: number): Observable<DeliverOrderResponse> {
     return this.#http.post<DeliverOrderResponse>(`${environment.apiUrl}/api/orders/${id}/deliver`, {
-      paymentMethod,
+      ...(paymentMethod ? { paymentMethod } : {}),
       ...(paymentMethod === 'cash' ? { cashReceived } : {}),
     });
   }
