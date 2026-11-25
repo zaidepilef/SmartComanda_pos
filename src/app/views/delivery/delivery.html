@@ -1,0 +1,197 @@
+<div class="dl-wrap">
+  <div class="dl-head">
+    <div>
+      <h2>Reparto</h2>
+      <p class="sub">Domicilios pedidos desde la app. Se cobran al entregar.</p>
+    </div>
+    <div class="pills">
+      <span class="pill">{{ readyOrders().length }} por salir</span>
+      <span class="pill amber">{{ outOrders().length }} en reparto</span>
+    </div>
+  </div>
+
+  @if (canSeeCash() && !cashSession()) {
+    <div class="warning" role="alert">
+      ⚠️ La caja está cerrada: ábrela antes de que salgan repartos, o no se podrá registrar el cobro.
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-banner">{{ error() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="empty">Cargando…</div>
+  } @else {
+    <div class="dl-grid">
+      <section class="dl-col">
+        <h3>Listos para salir</h3>
+        @for (order of readyOrders(); track order._id) {
+          <article class="dl-card">
+            <ng-container *ngTemplateOutlet="details; context: { $implicit: order }" />
+            <div class="card-actions">
+              @if (canAssign() && drivers().length > 0) {
+                <select
+                  [ngModel]="chosenDriver(order)"
+                  (ngModelChange)="chooseDriver(order, $event)"
+                  [name]="'driver-' + order._id"
+                  aria-label="Repartidor"
+                >
+                  <option value="">Elegir repartidor…</option>
+                  @for (driver of drivers(); track driver._id) {
+                    <option [value]="driver._id">{{ driver.firstName }} {{ driver.lastName }}</option>
+                  }
+                </select>
+              }
+              <button
+                type="button"
+                class="btn-primary"
+                [disabled]="busyId() === order._id"
+                (click)="dispatch(order)"
+              >
+                🛵 Salir a reparto
+              </button>
+            </div>
+          </article>
+        } @empty {
+          <div class="empty">No hay pedidos listos para salir.</div>
+        }
+      </section>
+
+      <section class="dl-col">
+        <h3>En reparto</h3>
+        @for (order of outOrders(); track order._id) {
+          <article class="dl-card out">
+            <ng-container *ngTemplateOutlet="details; context: { $implicit: order }" />
+            @if (order.driverName) {
+              <div class="driver">🛵 {{ order.driverName }}</div>
+            }
+            <div class="card-actions">
+              <button type="button" class="btn-primary" (click)="startDeliver(order)">
+                ✅ Entregar y cobrar {{ formatCLP(order.total) }}
+              </button>
+            </div>
+            @if (canAssign() && drivers().length > 0) {
+              <div class="card-actions">
+                <select
+                  [ngModel]="chosenDriver(order)"
+                  (ngModelChange)="chooseDriver(order, $event)"
+                  [name]="'reassign-' + order._id"
+                  aria-label="Reasignar repartidor"
+                >
+                  @for (driver of drivers(); track driver._id) {
+                    <option [value]="driver._id">{{ driver.firstName }} {{ driver.lastName }}</option>
+                  }
+                </select>
+                <button
+                  type="button"
+                  class="btn-ghost"
+                  [disabled]="busyId() === order._id || chosenDriver(order) === order.driverId"
+                  (click)="reassign(order)"
+                >
+                  Reasignar
+                </button>
+              </div>
+            }
+          </article>
+        } @empty {
+          <div class="empty">No hay pedidos en reparto.</div>
+        }
+      </section>
+    </div>
+  }
+</div>
+
+<ng-template #details let-order>
+  <div class="card-head">
+    <span class="num">#{{ order.number }}</span>
+    <span class="time">{{ ageLabel(order) }}</span>
+  </div>
+  <div class="customer">
+    <span>{{ order.clientName || 'Cliente' }}</span>
+    @if (telUrl(order); as tel) {
+      <a class="call" [href]="tel">📞 {{ order.clientPhone }}</a>
+    }
+  </div>
+  <app-delivery-info [order]="order" />
+  @if (collectLabel(order); as label) {
+    <div class="collect-badge">💵 {{ label }}</div>
+  }
+  <ul class="items">
+    @for (item of order.items; track $index) {
+      <li>
+        <span class="q">{{ item.quantity }}×</span> {{ item.name }}
+        @if (item.note) {
+          <div class="note">📝 {{ item.note }}</div>
+        }
+      </li>
+    }
+  </ul>
+</ng-template>
+
+<app-pos-modal
+  [open]="delivering() !== null"
+  [title]="'Entregar pedido #' + (delivering()?.number ?? '')"
+  (closed)="closeDeliver()"
+>
+  @if (delivering(); as order) {
+    <div class="amount">Cobrar {{ formatCLP(order.total) }}</div>
+    @if (order.expectedPaymentMethod) {
+      <p class="sub">El cliente dijo que pagaría con {{ expectedLabels[order.expectedPaymentMethod] }}.</p>
+    }
+    @if (order.paymentStatus === 'declined') {
+      <p class="sub warn">Ya se rechazó una tarjeta en este pedido. Cobra con otro medio.</p>
+    }
+
+    <div class="sec">
+      <label>¿Cómo pagó?</label>
+      <div class="opt-grid">
+        @for (method of collectMethods; track method) {
+          <button
+            type="button"
+            class="opt"
+            [class.active]="collectMethod() === method"
+            (click)="setCollectMethod(method)"
+          >
+            {{ collectLabels[method] }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (collectMethod() === 'cash') {
+      <div class="sec">
+        <label for="dlCashReceived">Monto recibido</label>
+        <input
+          id="dlCashReceived"
+          type="number"
+          min="0"
+          [ngModel]="cashReceived()"
+          (ngModelChange)="cashReceived.set($event === null || $event === '' ? null : +$event)"
+          name="dlCashReceived"
+        />
+        <div class="change-row">
+          <span>Vuelto</span>
+          <span class="change" [class.bad]="(change() ?? 0) < 0">
+            {{ (change() ?? 0) < 0 ? 'Falta ' + formatCLP(-(change() ?? 0)) : formatCLP(change() ?? 0) }}
+          </span>
+        </div>
+      </div>
+    } @else if (collectMethod()) {
+      <p class="sub">Confirma cuando el pago con {{ collectLabels[collectMethod()!] }} esté aprobado en el POS.</p>
+      <button type="button" class="btn-ghost danger wide" [disabled]="submitting()" (click)="declineCard()">
+        La tarjeta fue rechazada
+      </button>
+    }
+  }
+
+  <button
+    foot
+    type="button"
+    class="btn-primary"
+    [disabled]="!canConfirmDelivery() || submitting()"
+    (click)="confirmDeliver()"
+  >
+    {{ submitting() ? 'Registrando…' : 'Entregado y cobrado' }}
+  </button>
+</app-pos-modal>

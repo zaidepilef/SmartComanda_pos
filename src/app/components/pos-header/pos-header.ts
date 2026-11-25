@@ -31,6 +31,8 @@ export class PosHeader implements OnInit, OnDestroy {
 
   readonly canTakeOrders = computed(() => canDo(this.user(), 'orders'));
   readonly canUseCash = computed(() => canDo(this.user(), 'cash'));
+  readonly canUseKitchen = computed(() => canDo(this.user(), 'kitchen'));
+  readonly canDispatch = computed(() => canDo(this.user(), 'dispatch'));
   readonly roleName = computed(() => roleLabel(this.user()));
 
   readonly now = signal(new Date());
