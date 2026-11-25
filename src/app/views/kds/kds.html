@@ -16,46 +16,7 @@
     <section class="kds-col">
       <h3>Nuevos</h3>
       @for (order of newOrders(); track order._id) {
-        <article class="kds-card" [class.timed]="elapsedMinutes(order.createdAt) >= 10">
-          <div class="card-head">
-            <span class="num">#{{ order.number }}</span>
-            <span class="time">{{ elapsedLabel(order.createdAt) }}</span>
-          </div>
-          <div class="meta">
-            {{ orderTypeLabel(order.orderType) }}
-            @if (order.clientName) {
-              <span>· {{ order.clientName }}</span>
-            }
-            @if (order.clientPhone) {
-              <span>· {{ order.clientPhone }}</span>
-            }
-            @if (order.clientContact) {
-              <span>· {{ order.clientContact }}</span>
-            }
-          </div>
-          <app-delivery-info [order]="order" />
-          @if (order.paidByName) {
-            <div class="paid-by">💳 Cobró {{ order.paidByName }}</div>
-          }
-          <ul class="items">
-            @for (item of order.items; track $index) {
-              <li>
-                <span class="q">{{ item.quantity }}×</span> {{ item.name }}
-                @if (item.note) {
-                  <div class="note">📝 {{ item.note }}</div>
-                }
-              </li>
-            }
-          </ul>
-          <div class="card-actions">
-            <button type="button" class="advance" (click)="advance(order)">
-              {{ advanceLabel(order) }}
-            </button>
-            @if (canCancel(order)) {
-              <button type="button" class="cancel" (click)="cancel(order)">✕</button>
-            }
-          </div>
-        </article>
+        <ng-container *ngTemplateOutlet="card; context: { $implicit: order, lateAfter: 10 }" />
       } @empty {
         <div class="empty">Sin pedidos nuevos.</div>
       }
@@ -64,46 +25,7 @@
     <section class="kds-col">
       <h3>En preparación</h3>
       @for (order of preparingOrders(); track order._id) {
-        <article class="kds-card" [class.timed]="elapsedMinutes(order.createdAt) >= 15">
-          <div class="card-head">
-            <span class="num">#{{ order.number }}</span>
-            <span class="time">{{ elapsedLabel(order.createdAt) }}</span>
-          </div>
-          <div class="meta">
-            {{ orderTypeLabel(order.orderType) }}
-            @if (order.clientName) {
-              <span>· {{ order.clientName }}</span>
-            }
-            @if (order.clientPhone) {
-              <span>· {{ order.clientPhone }}</span>
-            }
-            @if (order.clientContact) {
-              <span>· {{ order.clientContact }}</span>
-            }
-          </div>
-          <app-delivery-info [order]="order" />
-          @if (order.paidByName) {
-            <div class="paid-by">💳 Cobró {{ order.paidByName }}</div>
-          }
-          <ul class="items">
-            @for (item of order.items; track $index) {
-              <li>
-                <span class="q">{{ item.quantity }}×</span> {{ item.name }}
-                @if (item.note) {
-                  <div class="note">📝 {{ item.note }}</div>
-                }
-              </li>
-            }
-          </ul>
-          <div class="card-actions">
-            <button type="button" class="advance" (click)="advance(order)">
-              {{ advanceLabel(order) }}
-            </button>
-            @if (canCancel(order)) {
-              <button type="button" class="cancel" (click)="cancel(order)">✕</button>
-            }
-          </div>
-        </article>
+        <ng-container *ngTemplateOutlet="card; context: { $implicit: order, lateAfter: 15 }" />
       } @empty {
         <div class="empty">Sin pedidos en preparación.</div>
       }
@@ -112,46 +34,69 @@
     <section class="kds-col">
       <h3>Listos</h3>
       @for (order of readyOrders(); track order._id) {
-        <article class="kds-card ready">
-          <div class="card-head">
-            <span class="num">#{{ order.number }}</span>
-            <span class="time">{{ elapsedLabel(order.createdAt) }}</span>
-          </div>
-          <div class="meta">
-            {{ orderTypeLabel(order.orderType) }}
-            @if (order.clientName) {
-              <span>· {{ order.clientName }}</span>
-            }
-            @if (order.clientPhone) {
-              <span>· {{ order.clientPhone }}</span>
-            }
-            @if (order.clientContact) {
-              <span>· {{ order.clientContact }}</span>
-            }
-          </div>
-          <app-delivery-info [order]="order" />
-          @if (order.paidByName) {
-            <div class="paid-by">💳 Cobró {{ order.paidByName }}</div>
-          }
-          <ul class="items">
-            @for (item of order.items; track $index) {
-              <li>
-                <span class="q">{{ item.quantity }}×</span> {{ item.name }}
-              </li>
-            }
-          </ul>
-          <div class="card-actions">
-            <button type="button" class="advance" (click)="advance(order)">
-              {{ advanceLabel(order) }}
-            </button>
-            @if (canCancel(order)) {
-              <button type="button" class="cancel" (click)="cancel(order)">✕</button>
-            }
-          </div>
-        </article>
+        <ng-container *ngTemplateOutlet="card; context: { $implicit: order, lateAfter: null }" />
       } @empty {
         <div class="empty">Sin pedidos listos.</div>
       }
     </section>
   </div>
 </div>
+
+<ng-template #card let-order let-lateAfter="lateAfter">
+  <article
+    class="kds-card"
+    [class.ready]="order.status === 'ready'"
+    [class.timed]="lateAfter !== null && elapsedMinutes(order.createdAt) >= lateAfter"
+  >
+    <div class="card-head">
+      <span class="num">#{{ order.number }}</span>
+      <span class="time">{{ elapsedLabel(order.createdAt) }}</span>
+    </div>
+    <div class="meta">
+      {{ orderTypeLabel(order.orderType) }}
+      @if (order.clientName) {
+        <span>· {{ order.clientName }}</span>
+      }
+      @if (order.clientPhone) {
+        <span>· {{ order.clientPhone }}</span>
+      }
+      @if (order.clientContact) {
+        <span>· {{ order.clientContact }}</span>
+      }
+    </div>
+    @if (collectLabel(order); as label) {
+      <div class="collect-badge">💵 {{ label }}</div>
+    }
+    <app-delivery-info [order]="order" />
+    @if (order.paidByName) {
+      <div class="paid-by">💳 Cobró {{ order.paidByName }}</div>
+    }
+    <ul class="items">
+      @for (item of order.items; track $index) {
+        <li>
+          <span class="q">{{ item.quantity }}×</span> {{ item.name }}
+          @if (item.note) {
+            <div class="note">📝 {{ item.note }}</div>
+          }
+        </li>
+      }
+    </ul>
+    <div class="card-actions">
+      @if (canAdvance(order)) {
+        <button type="button" class="advance" (click)="advance(order)">
+          {{ advanceLabel(order) }}
+        </button>
+      } @else if (isAppDeliveryReady(order)) {
+        <span class="handoff">🛵 Pasa a Reparto</span>
+      }
+      @if (canRejectOrder(order)) {
+        <button type="button" class="reject" (click)="startReject(order)">Rechazar</button>
+      }
+      @if (canCancel(order)) {
+        <button type="button" class="cancel" (click)="cancel(order)" title="Anular">✕</button>
+      }
+    </div>
+  </article>
+</ng-template>
+
+<app-reject-order [order]="rejecting()" (closed)="rejecting.set(null)" (rejected)="onRejected()" />

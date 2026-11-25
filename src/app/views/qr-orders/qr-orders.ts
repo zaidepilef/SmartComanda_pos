@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { DeliveryInfo } from '../../components/delivery-info/delivery-info';
+import { RejectOrder } from '../../components/reject-order/reject-order';
 import { PosModal } from '../../components/pos-modal/pos-modal';
 import { ToastService } from '../../components/toast/toast.service';
 import { AuthService } from '../../services/auth.service';
@@ -10,6 +11,7 @@ import { PAYMENT_METHOD_LABELS } from '../../services/branches.service';
 import { CashSessionService } from '../../services/cash-sessions.service';
 import { Order, OrderService, PaymentMethod } from '../../services/orders.service';
 import { canDo } from '../../services/roles';
+import { EXPECTED_METHOD_LABELS, preselectedMethod } from '../../services/order-labels';
 import { PosStore } from '../../store/pos-store.service';
 
 const POLL_INTERVAL_MS = 10000;
@@ -25,12 +27,14 @@ interface CorrectionLine {
 }
 
 /**
- * Pedidos QR pendientes de cobro: el Cajero los cobra (y pasan a cocina);
- * Encargado o superior también puede corregirlos o anularlos.
+ * Retiros pedidos desde la app pendientes de cobro: el Cajero los cobra (y pasan
+ * a cocina) o los rechaza con motivo; Encargado o superior también puede corregirlos
+ * o anularlos. Los domicilios de la app no pasan por aquí: entran a cocina y se
+ * cobran al entregar (pantalla Reparto).
  */
 @Component({
   selector: 'app-qr-orders',
-  imports: [FormsModule, PosModal, DeliveryInfo],
+  imports: [FormsModule, PosModal, DeliveryInfo, RejectOrder],
   templateUrl: './qr-orders.html',
   styleUrls: ['./qr-orders.scss'],
 })
@@ -49,6 +53,9 @@ export class QrOrdersView implements OnInit, OnDestroy {
   readonly now = signal(Date.now());
 
   readonly canManage = computed(() => canDo(this.#authService.user(), 'cancel'));
+  readonly canReject = computed(() => canDo(this.#authService.user(), 'reject'));
+  readonly rejecting = signal<Order | null>(null);
+  readonly expectedLabels = EXPECTED_METHOD_LABELS;
 
   readonly charging = signal<Order | null>(null);
   readonly paymentMethod = signal<PaymentMethod | null>(null);
@@ -91,19 +98,15 @@ export class QrOrdersView implements OnInit, OnDestroy {
     this.#orderService
       .list({
         branchId: this.branchId,
-        orderType: ['qr', 'delivery'],
+        orderType: 'qr',
         paymentStatus: 'pending',
         statuses: ['new'],
         limit: 100,
       })
       .subscribe({
         next: (orders) => {
-          // Solo los domicilios pedidos desde la app (con dirección); los del POS se cobran al crearlos.
-          const appOrders = orders.filter(
-            (order) => order.orderType === 'qr' || Boolean(order.deliveryAddress)
-          );
           // Los más antiguos primero: son los que llevan más tiempo esperando.
-          this.orders.set([...appOrders].reverse());
+          this.orders.set([...orders].reverse());
           this.now.set(Date.now());
           this.error.set('');
           this.loading.set(false);
@@ -159,8 +162,10 @@ export class QrOrdersView implements OnInit, OnDestroy {
       return;
     }
 
-    this.paymentMethod.set(null);
-    this.cashReceived.set(null);
+    // Se preselecciona el medio que el cliente dijo que usaría (se puede cambiar).
+    const method = preselectedMethod(order, this.branchPaymentMethods());
+    this.paymentMethod.set(method);
+    this.cashReceived.set(method === 'cash' ? (order.cashTendered ?? null) : null);
     this.charging.set(order);
   }
 
@@ -283,6 +288,17 @@ export class QrOrdersView implements OnInit, OnDestroy {
         this.#load(false);
       },
     });
+  }
+
+  // ── Rechazar (Cajero o superior) ────────────────────────────────────
+
+  startReject(order: Order): void {
+    this.rejecting.set(order);
+  }
+
+  onRejected(): void {
+    this.rejecting.set(null);
+    this.#load(false);
   }
 
   // ── Anular (Encargado o superior) ───────────────────────────────────

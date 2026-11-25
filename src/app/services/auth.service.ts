@@ -4,7 +4,7 @@ import { firstValueFrom, Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 
-export type UserRole = 'sysadmin' | 'owner' | 'admin' | 'cashier' | 'cook';
+export type UserRole = 'sysadmin' | 'owner' | 'admin' | 'cashier' | 'cook' | 'driver';
 
 export interface AuthUser {
   _id: string;
