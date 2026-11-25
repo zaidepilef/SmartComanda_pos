@@ -295,6 +295,35 @@ export class DeliveryView implements OnInit, OnDestroy {
       });
   }
 
+  /** Pedido ya pagado antes del reparto: se entrega sin cobrar ni abrir el modal de cobro. */
+  deliverPrepaid(order: Order): void {
+    if (order.paymentStatus !== 'paid' || this.submitting()) {
+      return;
+    }
+
+    this.submitting.set(true);
+
+    this.#orderService.deliver(order._id).subscribe({
+      next: ({ pointsEarned }) => {
+        this.submitting.set(false);
+        const points = pointsEarned ? ` · +${pointsEarned} puntos` : '';
+        this.#toast.ok(`Pedido #${order.number} entregado (ya estaba pagado)${points}.`);
+        this.#load(false);
+      },
+      error: (err) => {
+        this.submitting.set(false);
+        this.#toast.error(
+          err.status === 409
+            ? 'El pedido cambió de estado. Revisa la lista.'
+            : err.status === 403
+              ? 'Este reparto está asignado a otro repartidor.'
+              : (err.error?.error || 'No se pudo registrar la entrega.')
+        );
+        this.#load(false);
+      },
+    });
+  }
+
   /** La tarjeta no pasó: queda registrado y el pedido sigue en reparto para cobrar con otro medio. */
   declineCard(): void {
     const order = this.delivering();

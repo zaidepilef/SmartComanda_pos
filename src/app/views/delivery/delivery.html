@@ -67,9 +67,16 @@
               <div class="driver">🛵 {{ order.driverName }}</div>
             }
             <div class="card-actions">
-              <button type="button" class="btn-primary" (click)="startDeliver(order)">
-                ✅ Entregar y cobrar {{ formatCLP(order.total) }}
-              </button>
+              @if (order.paymentStatus === 'paid') {
+                <!-- Cobrado antes de salir (p. ej. en caja): solo se entrega. -->
+                <button type="button" class="btn-primary" [disabled]="submitting()" (click)="deliverPrepaid(order)">
+                  ✅ Entregar (ya pagado)
+                </button>
+              } @else {
+                <button type="button" class="btn-primary" (click)="startDeliver(order)">
+                  ✅ Entregar y cobrar {{ formatCLP(order.total) }}
+                </button>
+              }
             </div>
             @if (canAssign() && drivers().length > 0) {
               <div class="card-actions">
