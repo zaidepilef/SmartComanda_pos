@@ -7,19 +7,34 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Encargado',
   cashier: 'Cajero',
   cook: 'Cocinero',
+  driver: 'Repartidor',
 };
 
 const MANAGERS: UserRole[] = ['sysadmin', 'owner', 'admin'];
 const CASH_STAFF: UserRole[] = [...MANAGERS, 'cashier'];
+const KITCHEN_STAFF: UserRole[] = [...CASH_STAFF, 'cook'];
+const DISPATCH_STAFF: UserRole[] = [...MANAGERS, 'driver'];
 
 /** Acciones del POS, alineadas con la matriz de permisos de la API. */
-export type PosAction = 'cash' | 'orders' | 'cancel' | 'correct';
+export type PosAction =
+  | 'cash'
+  | 'orders'
+  | 'cancel'
+  | 'correct'
+  | 'kitchen'
+  | 'reject'
+  | 'dispatch'
+  | 'assign';
 
 const ACTION_ROLES: Record<PosAction, UserRole[]> = {
   cash: CASH_STAFF,
   orders: CASH_STAFF,
   cancel: MANAGERS,
   correct: MANAGERS,
+  kitchen: KITCHEN_STAFF,
+  reject: CASH_STAFF,
+  dispatch: DISPATCH_STAFF,
+  assign: MANAGERS,
 };
 
 export function userRoles(user: AuthUser | null): UserRole[] {
@@ -36,9 +51,12 @@ export function canDo(user: AuthUser | null, action: PosAction): boolean {
   return userRoles(user).some((role) => ACTION_ROLES[action].includes(role));
 }
 
-/** Pantalla de inicio según rol: el Cocinero entra directo a Cocina. */
+/** Pantalla de inicio según rol: Cocinero → Cocina, Repartidor → Reparto. */
 export function homeRoute(user: AuthUser | null): string {
-  return canDo(user, 'orders') ? '/pos' : '/kds';
+  if (canDo(user, 'orders')) {
+    return '/pos';
+  }
+  return canDo(user, 'kitchen') ? '/kds' : '/delivery';
 }
 
 export function roleLabel(user: AuthUser | null): string {

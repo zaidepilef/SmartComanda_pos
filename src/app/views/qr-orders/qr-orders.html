@@ -1,8 +1,8 @@
 <div class="qr-wrap">
   <div class="qr-head">
     <div>
-      <h2>Pedidos QR por cobrar</h2>
-      <p class="sub">El cliente pidió desde su teléfono (retiro o domicilio). Al cobrarlo, el pedido pasa a cocina.</p>
+      <h2>Retiros por cobrar</h2>
+      <p class="sub">El cliente pidió desde su teléfono para retirar. Al cobrarlo, el pedido pasa a cocina. Los domicilios se cobran al entregar (Reparto).</p>
     </div>
     <span class="pill">{{ orders().length }} pendientes</span>
   </div>
@@ -38,11 +38,25 @@
                 <span class="q">{{ item.quantity }}×</span> {{ item.name }}
                 <span class="price">{{ formatCLP(item.price * item.quantity) }}</span>
               </li>
+              @if (item.note) {
+                <li class="item-note">📝 {{ item.note }}</li>
+              }
             }
           </ul>
+          @if (order.expectedPaymentMethod) {
+            <div class="expected">
+              Pagará con {{ expectedLabels[order.expectedPaymentMethod] }}
+              @if (order.expectedPaymentMethod === 'cash' && order.cashTendered) {
+                · trae {{ formatCLP(order.cashTendered) }}
+              }
+            </div>
+          }
           <div class="total">{{ formatCLP(order.total) }}</div>
           <div class="card-actions">
             <button type="button" class="btn-primary" (click)="startCharge(order)">Cobrar</button>
+            @if (canReject()) {
+              <button type="button" class="btn-ghost danger" (click)="startReject(order)">Rechazar</button>
+            }
             @if (canManage()) {
               <button type="button" class="btn-ghost" (click)="startCorrect(order)">Corregir</button>
               <button type="button" class="btn-ghost danger" (click)="cancel(order)">Anular</button>
@@ -130,3 +144,5 @@
     {{ submitting() ? 'Guardando...' : 'Guardar corrección' }}
   </button>
 </app-pos-modal>
+
+<app-reject-order [order]="rejecting()" (closed)="rejecting.set(null)" (rejected)="onRejected()" />
