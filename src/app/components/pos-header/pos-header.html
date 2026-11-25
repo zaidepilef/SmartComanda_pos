@@ -33,7 +33,12 @@
         <a routerLink="/pos" routerLinkActive="active">Pedidos</a>
         <a routerLink="/qr" routerLinkActive="active">Por cobrar</a>
       }
-      <a routerLink="/kds" routerLinkActive="active">Cocina</a>
+      @if (canUseKitchen()) {
+        <a routerLink="/kds" routerLinkActive="active">Cocina</a>
+      }
+      @if (canDispatch()) {
+        <a routerLink="/delivery" routerLinkActive="active">Reparto</a>
+      }
       @if (canUseCash()) {
         <a routerLink="/cash" routerLinkActive="active">Caja</a>
       }

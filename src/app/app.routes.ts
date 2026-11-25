@@ -33,8 +33,13 @@ export const routes: Routes = [
   },
   {
     path: 'kds',
-    canActivate: [authGuard, contextGuard],
+    canActivate: [authGuard, roleGuard('kitchen'), contextGuard],
     loadComponent: () => import('./views/kds/kds').then((m) => m.KdsView),
+  },
+  {
+    path: 'delivery',
+    canActivate: [authGuard, roleGuard('dispatch'), contextGuard],
+    loadComponent: () => import('./views/delivery/delivery').then((m) => m.DeliveryView),
   },
   { path: '', pathMatch: 'full', redirectTo: 'pos' },
   { path: '**', redirectTo: 'pos' },

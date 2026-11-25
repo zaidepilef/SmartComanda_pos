@@ -8,7 +8,22 @@ export type OrderType = 'takeaway' | 'dinein' | 'delivery' | 'qr';
 
 export type PaymentMethod = 'cash' | 'debit' | 'credit' | 'transfer';
 
-export type OrderStatus = 'new' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+export type OrderStatus =
+  | 'new'
+  | 'preparing'
+  | 'ready'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'rejected'
+  | 'cancelled';
+
+export type PaymentStatus = 'pending' | 'paid' | 'declined' | 'voided' | 'refunded';
+
+/** Medio que el cliente dijo que usará (`card` = débito o crédito, decide en la puerta). */
+export type ExpectedPaymentMethod = 'cash' | 'debit' | 'credit' | 'card';
+
+/** Medios con los que el repartidor cobra en la entrega. */
+export type CollectMethod = 'cash' | 'debit' | 'credit';
 
 export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
   takeaway: 'Para llevar',
@@ -39,7 +54,7 @@ export interface Order {
   foodtruckId: string;
   number: number;
   orderType: OrderType;
-  paymentStatus: 'pending' | 'paid' | 'refunded';
+  paymentStatus: PaymentStatus;
   paymentMethod?: PaymentMethod;
   clientContact?: string;
   clientName?: string;
@@ -61,6 +76,12 @@ export interface Order {
   deliveryDistanceKm?: number | null;
   deliveryEtaMinutes?: number | null;
   deliveryOutOfRange?: boolean | null;
+  /** Flujo de compra de la app (change customer-purchase-flow). */
+  expectedPaymentMethod?: ExpectedPaymentMethod | null;
+  cashTendered?: number | null;
+  driverId?: string | null;
+  driverName?: string | null;
+  rejectionReason?: string | null;
 }
 
 export interface PayOrderResponse {
@@ -75,6 +96,12 @@ export interface CreateOrderPayload {
   orderType: OrderType;
   paymentMethod?: PaymentMethod;
   items: OrderItemInput[];
+}
+
+export interface DeliverOrderResponse {
+  order: Order;
+  change: number;
+  pointsEarned?: number;
 }
 
 export interface OrderWarning {
@@ -103,6 +130,8 @@ export class OrderService {
     paymentStatus?: Order['paymentStatus'];
     /** Vista de cocina: excluye pedidos de la app del cliente (QR o domicilio) sin cobrar. */
     kitchen?: boolean;
+    /** Solo domicilios pedidos desde la app del cliente (pantalla Reparto). */
+    appDeliveryOnly?: boolean;
     limit?: number;
   }): Observable<Order[]> {
     let httpParams = new HttpParams().set('branchId', params.branchId);
@@ -124,6 +153,10 @@ export class OrderService {
 
     if (params.kitchen) {
       httpParams = httpParams.set('kitchen', 'true');
+    }
+
+    if (params.appDeliveryOnly) {
+      httpParams = httpParams.set('appDeliveryOnly', 'true');
     }
 
     if (params.limit) {
@@ -153,6 +186,39 @@ export class OrderService {
     return this.#http.patch<Order>(
       `${environment.apiUrl}/api/orders/${id}/status`,
       { status }
+    );
+  }
+
+  /** Rechazo por el local (solo pedidos de la app en `new`, sin cobrar). */
+  reject(id: string, reason: string): Observable<Order> {
+    return this.#http.post<Order>(`${environment.apiUrl}/api/orders/${id}/reject`, { reason });
+  }
+
+  /** Sale a reparto. Sin `driverId` lo toma quien lo pide (repartidor). */
+  dispatch(id: string, driverId?: string): Observable<Order> {
+    return this.#http.post<Order>(
+      `${environment.apiUrl}/api/orders/${id}/dispatch`,
+      driverId ? { driverId } : {}
+    );
+  }
+
+  assignDriver(id: string, driverId: string): Observable<Order> {
+    return this.#http.put<Order>(`${environment.apiUrl}/api/orders/${id}/driver`, { driverId });
+  }
+
+  /** Entrega y cobro en la puerta, en una sola operación. */
+  deliver(id: string, paymentMethod: CollectMethod, cashReceived?: number): Observable<DeliverOrderResponse> {
+    return this.#http.post<DeliverOrderResponse>(`${environment.apiUrl}/api/orders/${id}/deliver`, {
+      paymentMethod,
+      ...(paymentMethod === 'cash' ? { cashReceived } : {}),
+    });
+  }
+
+  /** La tarjeta fue rechazada en la puerta; el pedido sigue en reparto. */
+  declinePayment(id: string, note?: string): Observable<Order> {
+    return this.#http.post<Order>(
+      `${environment.apiUrl}/api/orders/${id}/payment-declined`,
+      note ? { note } : {}
     );
   }
 }

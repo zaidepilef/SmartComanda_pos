@@ -1,6 +1,9 @@
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 
+import { NgTemplateOutlet } from '@angular/common';
+
 import { DeliveryInfo } from '../../components/delivery-info/delivery-info';
+import { RejectOrder } from '../../components/reject-order/reject-order';
 import { ToastService } from '../../components/toast/toast.service';
 import {
   Order,
@@ -11,6 +14,7 @@ import {
 import { PosStore } from '../../store/pos-store.service';
 import { AuthService } from '../../services/auth.service';
 import { canDo } from '../../services/roles';
+import { collectOnDeliveryLabel, isAppDelivery, isAppOrder } from '../../services/order-labels';
 
 const POLL_INTERVAL_MS = 10000;
 
@@ -31,7 +35,7 @@ const formatCLP = (value: number): string =>
 
 @Component({
   selector: 'app-kds',
-  imports: [DeliveryInfo],
+  imports: [DeliveryInfo, NgTemplateOutlet, RejectOrder],
   templateUrl: './kds.html',
   styleUrls: ['./kds.scss'],
 })
@@ -43,8 +47,13 @@ export class KdsView implements OnInit, OnDestroy {
 
   /** Solo Encargado o superior anula pedidos (con motivo). */
   readonly canManage = computed(() => canDo(this.#authService.user(), 'cancel'));
+  /** Cajero o superior rechaza pedidos de la app antes de prepararlos (con motivo). */
+  readonly canReject = computed(() => canDo(this.#authService.user(), 'reject'));
+  readonly rejecting = signal<Order | null>(null);
 
   readonly loading = signal(false);
+  /** Hora de referencia para los minutos transcurridos; se actualiza en cada consulta. */
+  readonly now = signal(Date.now());
   readonly error = signal('');
 
   readonly newOrders = signal<Order[]>([]);
@@ -92,6 +101,7 @@ export class KdsView implements OnInit, OnDestroy {
       })
       .subscribe({
         next: (orders) => {
+          this.now.set(Date.now());
           this.newOrders.set(orders.filter((order) => order.status === 'new'));
           this.preparingOrders.set(orders.filter((order) => order.status === 'preparing'));
           this.readyOrders.set(orders.filter((order) => order.status === 'ready'));
@@ -115,7 +125,7 @@ export class KdsView implements OnInit, OnDestroy {
   }
 
   elapsedMinutes(createdAt: string): number {
-    return Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000));
+    return Math.max(0, Math.floor((this.now() - new Date(createdAt).getTime()) / 60000));
   }
 
   elapsedLabel(createdAt: string): string {
@@ -129,6 +139,35 @@ export class KdsView implements OnInit, OnDestroy {
     return `${hours}h ${minutes % 60}m`;
   }
 
+  /** Distintivo de cobro pendiente en domicilios de la app ("Paga al recibir $X"). */
+  collectLabel(order: Order): string | null {
+    return collectOnDeliveryLabel(order);
+  }
+
+  /** Un domicilio de la app listo sale desde Reparto, no desde cocina. */
+  canAdvance(order: Order): boolean {
+    return !(order.status === 'ready' && isAppDelivery(order));
+  }
+
+  isAppDeliveryReady(order: Order): boolean {
+    return order.status === 'ready' && isAppDelivery(order);
+  }
+
+  canRejectOrder(order: Order): boolean {
+    return (
+      this.canReject() && isAppOrder(order) && order.status === 'new' && order.paymentStatus !== 'paid'
+    );
+  }
+
+  startReject(order: Order): void {
+    this.rejecting.set(order);
+  }
+
+  onRejected(): void {
+    this.rejecting.set(null);
+    this.#load(false);
+  }
+
   advance(order: Order): void {
     const next: Partial<Record<OrderStatus, OrderStatus>> = {
       new: 'preparing',
@@ -138,7 +177,7 @@ export class KdsView implements OnInit, OnDestroy {
 
     const target = next[order.status];
 
-    if (!target) {
+    if (!target || !this.canAdvance(order)) {
       return;
     }
 

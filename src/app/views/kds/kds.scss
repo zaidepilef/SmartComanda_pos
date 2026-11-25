@@ -182,3 +182,38 @@
   color: var(--muted);
   margin-top: 2px;
 }
+
+.collect-badge {
+  margin: 6px 0 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 159, 28, 0.14);
+  border: 1px solid var(--accent2);
+  color: #ffc46b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.card-actions .handoff {
+  flex: 1;
+  padding: 9px;
+  border-radius: 8px;
+  border: 1px dashed var(--accent2);
+  color: var(--accent2);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.card-actions .reject {
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--danger);
+  color: #ff8a94;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.card-actions .reject:hover {
+  background: rgba(193, 18, 31, 0.15);
+}
